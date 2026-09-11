@@ -342,7 +342,7 @@ require("lazy").setup({
   -- ── Fuzzy Finder ─────────────────────────────────────────────────────────
   {
     "nvim-telescope/telescope.nvim",
-    tag = "0.1.x",
+    version = "0.1.x",
     dependencies = {
       "nvim-lua/plenary.nvim",
       { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
@@ -649,6 +649,9 @@ require("lazy").setup({
       })
     end,
   },
+
+  -- ── Git (enables :Git blame -w and other Fugitive commands) ──────────────
+  { "tpope/vim-fugitive" },
 
   -- ── Auto Pairs ───────────────────────────────────────────────────────────
   {
@@ -1045,6 +1048,23 @@ map("n", "<leader>fg",":Telescope live_grep<CR>", o)
 -- Search in current buffer
 map("n", "<C-f>", ":Telescope current_buffer_fuzzy_find<CR>", o)
 map("n", "<leader>/", ":Telescope current_buffer_fuzzy_find<CR>", o)
+
+-- Git blame of the current file (needs a .git folder)
+local function git_blame()
+  local name = vim.api.nvim_buf_get_name(0)
+  if name == "" or vim.bo.buftype ~= "" then
+    vim.notify("Git blame needs a real file (not the dashboard or file tree).", vim.log.levels.WARN)
+    return
+  end
+  local git = vim.fn.finddir(".git", vim.fn.fnamemodify(name, ":h") .. ";")
+  if git == "" then
+    vim.notify("This folder is not a git repo, so there is no blame history.", vim.log.levels.ERROR)
+    return
+  end
+  vim.cmd("Git blame -w -- " .. vim.fn.fnameescape(name))
+end
+vim.api.nvim_create_user_command("GitBlame", git_blame, {})
+map("n", "<leader>gb", git_blame, o)
 
 -- Save
 map({ "n", "i", "v" }, "<C-s>", "<Esc>:w<CR>", o)

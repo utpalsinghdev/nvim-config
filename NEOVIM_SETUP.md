@@ -41,6 +41,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | which-key.nvim | Popup shortcut guide (press Space and wait) |
 | indent-blankline.nvim | Indent guide lines |
 | gitsigns.nvim | Git changes in the gutter |
+| vim-fugitive | Git commands (`:Git blame -w`) |
 | nvim-autopairs | Auto-close brackets/quotes |
 | Comment.nvim | Toggle comments |
 | rainbow-delimiters.nvim | Colorized matching brackets |
@@ -83,6 +84,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Ctrl+W` | Close buffer |
 | `Alt+J` / `Alt+K` | Move line down / up |
 | `Ctrl+/` | Toggle comment |
+| `Space + gb` / `:GitBlame` | Git blame (file must be in a git repo) |
 
 > File tree is `Space+e`, not `Ctrl+B` — `Ctrl+B` is Herdr's prefix.
 
