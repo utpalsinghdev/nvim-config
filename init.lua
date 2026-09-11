@@ -117,6 +117,69 @@ end
 
 vim.api.nvim_create_user_command("FindProjectFiles", find_project_files, {})
 
+-- Config repo updates (origin/main vs this clone of nvim-config).
+local nvim_config_dir = vim.fn.stdpath("config")
+local nvim_config_behind = 0
+local nvim_config_busy = false
+
+local function nvim_config_git(args, cb)
+  vim.system(vim.list_extend({ "git", "-C", nvim_config_dir }, args), { text = true }, cb)
+end
+
+local function nvim_config_count_behind()
+  nvim_config_git({ "rev-list", "--count", "HEAD..origin/main" }, function(obj)
+    vim.schedule(function()
+      nvim_config_behind = tonumber((obj.stdout or ""):match("%d+")) or 0
+      pcall(vim.cmd.redrawstatus)
+    end)
+  end)
+end
+
+local function nvim_config_fetch_behind()
+  if nvim_config_busy then
+    return
+  end
+  nvim_config_busy = true
+  nvim_config_git({ "fetch", "origin", "--quiet" }, function()
+    nvim_config_busy = false
+    nvim_config_count_behind()
+  end)
+end
+
+local function nvim_config_apply_update()
+  if nvim_config_busy then
+    vim.notify("Config update already running", vim.log.levels.WARN)
+    return
+  end
+  nvim_config_busy = true
+  vim.notify("Pulling Neovim config from origin/main…")
+  nvim_config_git({ "fetch", "origin", "--quiet" }, function()
+    nvim_config_git({ "pull", "--ff-only", "origin", "main" }, function(obj)
+      vim.schedule(function()
+        if obj.code ~= 0 then
+          nvim_config_busy = false
+          vim.notify(
+            vim.trim(obj.stderr ~= "" and obj.stderr or obj.stdout or "git pull failed"),
+            vim.log.levels.ERROR
+          )
+          nvim_config_count_behind()
+          return
+        end
+        vim.notify("Installing plugins from the updated lockfile…")
+        pcall(function()
+          require("lazy").sync()
+        end)
+        nvim_config_busy = false
+        nvim_config_behind = 0
+        vim.notify("Config updated. Restart Neovim so every change loads.")
+        pcall(vim.cmd.redrawstatus)
+      end)
+    end)
+  end)
+end
+
+vim.api.nvim_create_user_command("NvimConfigUpdate", nvim_config_apply_update, {})
+
 -- ============================================================================
 -- Plugins
 -- ============================================================================
@@ -311,9 +374,41 @@ require("lazy").setup({
           lualine_c = { { "filename", path = 1 } },
           lualine_x = { "encoding", "fileformat", "filetype" },
           lualine_y = { "progress" },
-          lualine_z = { "location" },
+          lualine_z = {
+            "location",
+            {
+              function()
+                if nvim_config_busy then
+                  return " ↻ … "
+                end
+                if nvim_config_behind > 0 then
+                  return string.format(" ↻ %d ", nvim_config_behind)
+                end
+                return " ↻ "
+              end,
+              color = function()
+                if nvim_config_behind > 0 then
+                  return { fg = "#1e1e2e", bg = "#f38ba8", gui = "bold" }
+                end
+                return { fg = "#1e1e2e", bg = "#89b4fa" }
+              end,
+              on_click = function()
+                nvim_config_apply_update()
+              end,
+            },
+          },
         },
       })
+      vim.api.nvim_create_autocmd({ "VimEnter", "FocusGained" }, {
+        group = vim.api.nvim_create_augroup("NvimConfigUpdateCheck", { clear = true }),
+        callback = function()
+          vim.defer_fn(nvim_config_fetch_behind, 800)
+        end,
+      })
+      local timer = vim.uv.new_timer()
+      if timer then
+        timer:start(10 * 60 * 1000, 10 * 60 * 1000, vim.schedule_wrap(nvim_config_fetch_behind))
+      end
     end,
   },
 
