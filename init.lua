@@ -619,16 +619,46 @@ require("lazy").setup({
     end,
   },
 
-  -- ── Scrollbar ────────────────────────────────────────────────────────────
+  -- ── Minimap (VS Code-style overview on the right) ─────────────────────────
   {
-    "petertriho/nvim-scrollbar",
-    config = function()
-      require("scrollbar").setup({
-        handle = { color = "#585b70" },
-        marks = {
-          Search = { color = "#f38ba8" },
-          Cursor = { color = "#cba6f7" },
+    "Isrothy/neominimap.nvim",
+    version = "^3",
+    lazy = false,
+    init = function()
+      vim.g.neominimap = {
+        auto_enable = true,
+        layout = "split",
+        current_line_position = "percent",
+        sync_cursor = true,
+        click = { enabled = true, auto_switch_focus = false },
+        exclude_filetypes = {
+          "help", "NvimTree", "dashboard", "lazy", "mason",
+          "TelescopePrompt", "notify", "noice", "qf",
         },
+        split = {
+          minimap_width = 14,
+          fix_width = true,
+          direction = "right",
+          close_if_last_window = true,
+        },
+        diagnostic = {
+          enabled = true,
+          severity = vim.diagnostic.severity.ERROR,
+          mode = "line",
+        },
+        git = { enabled = false },
+        treesitter = { enabled = true },
+      }
+    end,
+    config = function()
+      local function paint_minimap()
+        vim.api.nvim_set_hl(0, "NeominimapCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
+        vim.api.nvim_set_hl(0, "NeominimapErrorLine", { bg = "#f38ba8" })
+      end
+      paint_minimap()
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = vim.api.nvim_create_augroup("NeominimapColors", { clear = true }),
+        callback = paint_minimap,
       })
     end,
   },
