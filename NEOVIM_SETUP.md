@@ -83,7 +83,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Ctrl+/` | Toggle comment |
 
 > **Cmd+ shortcuts** (Cmd+B, Cmd+P, etc.) work natively in **Neovide** (GUI).
-> In terminal, use the Ctrl or Space alternatives above.
+> In terminal, use the Ctrl or Space alternatives above. File tree is `Space+e` (not `Ctrl+B` — that is Herdr's prefix).
 > Install Neovide: `brew install --cask neovide`
 
 ### File Tree (Space+E to open)
