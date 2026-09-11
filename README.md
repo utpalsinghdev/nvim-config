@@ -19,17 +19,9 @@ nvim
 
 Set the terminal font to **JetBrainsMono Nerd Font**. Copilot still needs `:Copilot auth` once per machine.
 
-## Updates on a machine that already has this config
+## Updates
 
-The blue **↻** control at the far right of the statusline is for this repo. A red **↻ 2** means `origin/main` has 2 commits you do not have yet. Click it (mouse) or run `:NvimConfigUpdate` to `git pull` and install new plugins. Restart Neovim afterward.
-
-From a shell:
-
-```bash
-cd ~/.config/nvim
-chmod +x update.sh
-./update.sh
-```
+The **↻** control at the far right of the statusline watches `origin/main`. When it turns red with a number, click it. Neovim pulls the config, installs new plugins, then asks you to quit so you can open Neovim again.
 
 
 HTTPS:

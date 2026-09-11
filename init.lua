@@ -146,33 +146,67 @@ local function nvim_config_fetch_behind()
   end)
 end
 
+local function nvim_config_prompt_reopen()
+  local choice = vim.fn.confirm(
+    "Config updated.\nQuit Neovim now, then open it again to load the new version.",
+    "&Quit\n&Later",
+    1
+  )
+  if choice == 1 then
+    vim.cmd("confirm qa")
+  end
+end
+
 local function nvim_config_apply_update()
   if nvim_config_busy then
     vim.notify("Config update already running", vim.log.levels.WARN)
     return
   end
   nvim_config_busy = true
-  vim.notify("Pulling Neovim config from origin/main…")
+  pcall(vim.cmd.redrawstatus)
   nvim_config_git({ "fetch", "origin", "--quiet" }, function()
     nvim_config_git({ "pull", "--ff-only", "origin", "main" }, function(obj)
       vim.schedule(function()
         if obj.code ~= 0 then
           nvim_config_busy = false
-          vim.notify(
-            vim.trim(obj.stderr ~= "" and obj.stderr or obj.stdout or "git pull failed"),
-            vim.log.levels.ERROR
+          vim.fn.confirm(
+            vim.trim(obj.stderr ~= "" and obj.stderr or obj.stdout or "Update failed."),
+            "&OK",
+            1
           )
           nvim_config_count_behind()
           return
         end
-        vim.notify("Installing plugins from the updated lockfile…")
-        pcall(function()
-          require("lazy").sync()
+
+        local already = (obj.stdout or ""):lower():find("already up to date", 1, true)
+        if already then
+          nvim_config_busy = false
+          nvim_config_behind = 0
+          pcall(vim.cmd.redrawstatus)
+          vim.fn.confirm("Already up to date. No restart needed.", "&OK", 1)
+          return
+        end
+
+        local group = vim.api.nvim_create_augroup("NvimConfigUpdateDone", { clear = true })
+        vim.api.nvim_create_autocmd("User", {
+          group = group,
+          pattern = "LazySync",
+          once = true,
+          callback = function()
+            nvim_config_busy = false
+            nvim_config_behind = 0
+            pcall(vim.cmd.redrawstatus)
+            nvim_config_prompt_reopen()
+          end,
+        })
+        local ok = pcall(function()
+          require("lazy").sync({ show = false })
         end)
-        nvim_config_busy = false
-        nvim_config_behind = 0
-        vim.notify("Config updated. Restart Neovim so every change loads.")
-        pcall(vim.cmd.redrawstatus)
+        if not ok then
+          vim.api.nvim_clear_autocmds({ group = group })
+          nvim_config_busy = false
+          nvim_config_prompt_reopen()
+        end
       end)
     end)
   end)
