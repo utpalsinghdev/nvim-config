@@ -75,6 +75,48 @@ local function close_buffer(bufnr)
   end
 end
 
+-- Search from the git root (or cwd), not a nested buffer folder.
+local function project_root()
+  local start = vim.fn.getcwd()
+  local buf = vim.api.nvim_get_current_buf()
+  local name = vim.api.nvim_buf_get_name(buf)
+  local ft = vim.bo[buf].filetype
+  if ft ~= "NvimTree" and ft ~= "dashboard" and vim.bo[buf].buftype == "" and name ~= "" then
+    start = vim.fn.fnamemodify(name, ":h")
+  end
+  local git = vim.fn.finddir(".git", start .. ";")
+  if git == "" then
+    git = vim.fn.finddir(".git", vim.fn.getcwd() .. ";")
+  end
+  if git ~= "" then
+    return vim.fn.fnamemodify(git, ":h")
+  end
+  return vim.fn.getcwd()
+end
+
+local function find_project_files()
+  local opts = {
+    cwd = project_root(),
+    hidden = true,
+    follow = true,
+  }
+  if vim.fn.executable("fd") == 1 then
+    opts.find_command = {
+      "fd", "--type", "f", "--hidden", "--follow", "--color", "never",
+      "--no-ignore-vcs",
+      "--exclude", ".git",
+      "--exclude", "node_modules",
+      "--exclude", "dist",
+      "--exclude", "build",
+      "--exclude", ".next",
+      "--exclude", "coverage",
+    }
+  end
+  require("telescope.builtin").find_files(opts)
+end
+
+vim.api.nvim_create_user_command("FindProjectFiles", find_project_files, {})
+
 -- ============================================================================
 -- Plugins
 -- ============================================================================
@@ -169,8 +211,8 @@ require("lazy").setup({
         defaults = {
           prompt_prefix = "  ",
           selection_caret = " ",
-          path_display = { "smart" },
-          file_ignore_patterns = { "node_modules", ".git/", "dist/", "build/" },
+          path_display = { "truncate" },
+          file_ignore_patterns = { "node_modules/", "%.git/", "dist/", "build/" },
           mappings = {
             i = {
               ["<C-j>"] = actions.move_selection_next,
@@ -180,10 +222,10 @@ require("lazy").setup({
           },
         },
         pickers = {
-          find_files = { hidden = true },
+          find_files = { hidden = true, follow = true },
         },
       })
-      telescope.load_extension("fzf")
+      pcall(telescope.load_extension, "fzf")
     end,
   },
 
@@ -430,7 +472,7 @@ require("lazy").setup({
         config = {
           week_header = { enable = true },
           shortcut = {
-            { desc = "  Find File",    key = "f", action = "Telescope find_files" },
+            { desc = "  Find File",    key = "f", action = "FindProjectFiles" },
             { desc = "  Recent Files", key = "r", action = "Telescope oldfiles" },
             { desc = "  Grep",         key = "g", action = "Telescope live_grep" },
             { desc = "  Config",       key = "c", action = "e ~/.config/nvim/init.lua" },
@@ -641,8 +683,8 @@ map("n", "<D-b>",    ":NvimTreeToggle<CR>", o)
 map("n", "<leader>e",":NvimTreeToggle<CR>", o)
 
 -- Fuzzy find files (Cmd+P / Ctrl+P)
-map("n", "<D-p>", ":Telescope find_files<CR>", o)
-map("n", "<C-p>", ":Telescope find_files<CR>", o)
+map("n", "<D-p>", find_project_files, o)
+map("n", "<C-p>", find_project_files, o)
 
 -- Live grep all files (Cmd+Shift+F → use Space+fg in terminal)
 map("n", "<D-F>",    ":Telescope live_grep<CR>", o)
