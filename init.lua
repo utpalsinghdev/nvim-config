@@ -73,7 +73,6 @@ local function close_buffer(bufnr)
   end
 
   if not replacement then
-    overview_hide()
     pcall(vim.cmd.Dashboard)
     for _, b in ipairs(vim.api.nvim_list_bufs()) do
       if vim.api.nvim_buf_is_valid(b)
