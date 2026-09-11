@@ -282,6 +282,9 @@ require("lazy").setup({
         -- Plain underline so errors show even when the terminal cannot draw undercurl.
         vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { underline = true, sp = "#f38ba8" })
         vim.api.nvim_set_hl(0, "DiagnosticUnderlineWarn", { underline = true, sp = "#f9e2af" })
+        vim.api.nvim_set_hl(0, "CmpCmdNormal", { bg = "#313244", fg = "#cdd6f4" })
+        vim.api.nvim_set_hl(0, "CmpCmdBorder", { bg = "#313244", fg = "#89b4fa" })
+        vim.api.nvim_set_hl(0, "CmpCmdSel", { bg = "#45475a", fg = "#cdd6f4", bold = true })
       end
       minimap_transparent()
       vim.api.nvim_create_autocmd("ColorScheme", {
@@ -469,6 +472,22 @@ require("lazy").setup({
           override = {
             ["vim.lsp.util.convert_input_to_markdown_lines"] = true,
             ["vim.lsp.util.stylize_markdown"] = true,
+          },
+        },
+        popupmenu = { enabled = false },
+        views = {
+          cmdline_popup = {
+            size = { width = 60, min_width = 60 },
+          },
+          cmdline_popupmenu = {
+            border = { style = "rounded" },
+            win_options = {
+              winhighlight = {
+                Normal = "NoiceCmdlinePopup",
+                FloatBorder = "NoiceCmdlinePopupBorder",
+                CursorLine = "PmenuSel",
+              },
+            },
           },
         },
         presets = {
@@ -1040,6 +1059,7 @@ require("lazy").setup({
       "hrsh7th/cmp-nvim-lsp",
       "hrsh7th/cmp-buffer",
       "hrsh7th/cmp-path",
+      "hrsh7th/cmp-cmdline",
       "L3MON4D3/LuaSnip",
       "saadparwaiz1/cmp_luasnip",
       "rafamadriz/friendly-snippets",
@@ -1069,6 +1089,92 @@ require("lazy").setup({
           { name = "luasnip" },
           { name = "buffer" },
           { name = "path" },
+        }),
+      })
+
+      cmp.setup.cmdline({ "/", "?" }, {
+        mapping = cmp.mapping.preset.cmdline(),
+        sources = {
+          { name = "buffer", keyword_length = 3 },
+        },
+      })
+
+      local cmdline_desc = {
+        Copilot = "GitHub Copilot",
+        auth = "Sign in / out of Copilot",
+        attach = "Attach Copilot to this buffer",
+        detach = "Detach Copilot from this buffer",
+        disable = "Turn Copilot off",
+        enable = "Turn Copilot on",
+        model = "Choose Copilot model",
+        panel = "Open Copilot panel",
+        status = "Show Copilot status",
+        suggestion = "Inline suggestion controls",
+        toggle = "Toggle Copilot",
+        version = "Show Copilot version",
+        signin = "Sign in to GitHub Copilot",
+        signout = "Sign out of GitHub Copilot",
+        Git = "Git commands (Fugitive)",
+        GitBlame = "Blame the current file",
+        Lazy = "Plugin manager",
+        Mason = "Install language servers",
+        Dashboard = "Open the start screen",
+        FindProjectFiles = "Find a file in the project",
+        NvimConfigUpdate = "Update this Neovim config",
+        Telescope = "Fuzzy finder",
+        w = "Save the file",
+        q = "Quit",
+        qa = "Quit all windows",
+        e = "Edit a file",
+        s = "Split window",
+        vs = "Vertical split",
+        sp = "Horizontal split",
+        bd = "Close this buffer",
+        bn = "Next buffer",
+        bp = "Previous buffer",
+      }
+
+      local function cmdline_box_width()
+        local ok, pos = pcall(require("noice.api").get_cmdline_position)
+        if ok and pos and pos.win and vim.api.nvim_win_is_valid(pos.win) then
+          return vim.api.nvim_win_get_width(pos.win)
+        end
+        return 60
+      end
+
+      cmp.setup.cmdline(":", {
+        mapping = {
+          ["<Tab>"] = { c = cmp.mapping.select_next_item() },
+          ["<S-Tab>"] = { c = cmp.mapping.select_prev_item() },
+          ["<C-e>"] = { c = cmp.mapping.abort() },
+        },
+        window = {
+          completion = {
+            border = "rounded",
+            side_padding = 1,
+            winhighlight = "Normal:NoiceCmdlinePopup,FloatBorder:NoiceCmdlinePopupBorder,CursorLine:PmenuSel,Search:None",
+          },
+        },
+        formatting = {
+          fields = { "abbr", "menu" },
+          format = function(_, item)
+            item.kind = ""
+            local desc = cmdline_desc[item.abbr] or ""
+            local width = cmdline_box_width() - 4
+            local used = vim.fn.strdisplaywidth(item.abbr)
+            if desc ~= "" then
+              local gap = math.max(2, width - used - vim.fn.strdisplaywidth(desc))
+              item.menu = string.rep(" ", gap) .. desc
+            else
+              item.menu = string.rep(" ", math.max(0, width - used))
+            end
+            return item
+          end,
+        },
+        sources = cmp.config.sources({
+          { name = "path" },
+        }, {
+          { name = "cmdline" },
         }),
       })
     end,

@@ -51,7 +51,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | mason.nvim | LSP server installer UI (`:Mason` to open) |
 | mason-lspconfig.nvim | Auto-installs LSP servers via Mason |
 | nvim-lspconfig | Configures language servers (includes ESLint for JS/TS) |
-| nvim-cmp | Autocomplete popup |
+| nvim-cmp | Autocomplete popup (also filters `:` commands as you type) |
 | LuaSnip | Snippet engine |
 | conform.nvim | Auto-format on save |
 | copilot.lua | GitHub Copilot inline tab suggestions |
@@ -179,6 +179,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Ctrl+J / K` | Navigate suggestions |
 | `Enter` | Confirm suggestion |
 | `Ctrl+E` | Dismiss popup |
+| `:` then type | Filter commands (Tab / Shift+Tab, then Enter) |
 
 ### Copilot
 
