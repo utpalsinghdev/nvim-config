@@ -75,16 +75,15 @@ brew install --cask font-jetbrains-mono-nerd-font
 |----------|--------|
 | `Ctrl+P` | Find file by name |
 | `Space + e` | Toggle file tree |
-| `Space + /` | Search in current file |
-| `Space + fg` | Grep across all files |
+| `Ctrl+F` / `Space + /` | Search in current file |
+| `Ctrl+Shift+F` / `Space + fg` | Grep across all files |
 | `Ctrl+S` | Save file |
 | `Ctrl+A` | Select all |
+| `Ctrl+W` | Close buffer |
 | `Alt+J` / `Alt+K` | Move line down / up |
 | `Ctrl+/` | Toggle comment |
 
-> **Cmd+ shortcuts** (Cmd+B, Cmd+P, etc.) work natively in **Neovide** (GUI).
-> In terminal, use the Ctrl or Space alternatives above. File tree is `Space+e` (not `Ctrl+B` — that is Herdr's prefix).
-> Install Neovide: `brew install --cask neovide`
+> File tree is `Space+e`, not `Ctrl+B` — `Ctrl+B` is Herdr's prefix.
 
 ### File Tree (Space+E to open)
 
@@ -104,7 +103,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Shift+L` | Next buffer (tab right) |
 | `Shift+H` | Previous buffer (tab left) |
 | `Space+b` | Pick open buffer with Telescope |
-| `Cmd+W` | Close buffer |
+| `Ctrl+W` | Close buffer |
 
 ### Window Splits
 

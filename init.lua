@@ -178,6 +178,9 @@ require("lazy").setup({
         renderer = {
           group_empty = true,
           highlight_git = true,
+          root_folder_label = function(path)
+            return vim.fn.fnamemodify(path, ":t")
+          end,
           icons = {
             show = { file = true, folder = true, folder_arrow = true, git = true },
           },
@@ -678,28 +681,25 @@ require("lazy").setup({
 local map = vim.keymap.set
 local o = { noremap = true, silent = true }
 
--- File Tree (Space+E; Cmd+B in Neovide). Ctrl+B is Herdr's prefix — do not bind it.
-map("n", "<D-b>",    ":NvimTreeToggle<CR>", o)
+-- File Tree. Ctrl+B is Herdr's prefix — use Space+E.
 map("n", "<leader>e",":NvimTreeToggle<CR>", o)
 
--- Fuzzy find files (Cmd+P / Ctrl+P)
-map("n", "<D-p>", find_project_files, o)
+-- Fuzzy find files
 map("n", "<C-p>", find_project_files, o)
 
--- Live grep all files (Cmd+Shift+F → use Space+fg in terminal)
-map("n", "<D-F>",    ":Telescope live_grep<CR>", o)
+-- Live grep (Ctrl+Shift+F / Space+fg)
+map("n", "<C-S-f>", ":Telescope live_grep<CR>", o)
 map("n", "<leader>fg",":Telescope live_grep<CR>", o)
 
--- Search in current buffer (Cmd+F / Space+/)
-map("n", "<D-f>",  ":Telescope current_buffer_fuzzy_find<CR>", o)
+-- Search in current buffer
+map("n", "<C-f>", ":Telescope current_buffer_fuzzy_find<CR>", o)
 map("n", "<leader>/", ":Telescope current_buffer_fuzzy_find<CR>", o)
 
--- Save (Cmd+S / Ctrl+S)
-map({ "n", "i", "v" }, "<D-s>", "<Esc>:w<CR>", o)
-map("n", "<C-s>", ":w<CR>", o)
+-- Save
+map({ "n", "i", "v" }, "<C-s>", "<Esc>:w<CR>", o)
 
--- Close buffer (Cmd+W)
-map("n", "<D-w>", close_buffer, o)
+-- Close buffer
+map("n", "<C-w>", close_buffer, o)
 
 -- Navigate buffers like VSCode tabs (Shift+H / Shift+L)
 map("n", "<S-l>", ":bnext<CR>",     o)
@@ -728,12 +728,10 @@ map("n", "<Esc>", ":noh<CR>", o)
 map("v", "<", "<gv", o)
 map("v", ">", ">gv", o)
 
--- Select all (Cmd+A / Ctrl+A)
-map("n", "<D-a>", "ggVG", o)
+-- Select all
 map("n", "<C-a>", "ggVG", o)
 
--- Duplicate line (Cmd+D / Space+D)
-map("n", "<D-d>",    ":t.<CR>",    o)
+-- Duplicate line
 map("n", "<leader>d",":t.<CR>",    o)
 
 -- Comment line (gcc in normal, gc in visual — built into Comment.nvim)
@@ -744,10 +742,6 @@ map("v", "<C-/>", "gc",  { remap = true, silent = true })
 -- Terminal
 map("n", "<leader>t", ":terminal<CR>", o)
 map("t", "<Esc>",     "<C-\\><C-n>",   o)  -- Esc to exit terminal insert mode
-
--- Undo / Redo
-map("n", "<D-z>",       "u",     o)
-map("n", "<D-S-z>",     "<C-r>", o)
 
 -- New line below/above without entering insert mode
 map("n", "<leader>o", "o<Esc>", o)
