@@ -791,22 +791,126 @@ require("lazy").setup({
     event = "VimEnter",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
-      require("dashboard").setup({
-        theme = "hyper",
-        config = {
-          week_header = { enable = true },
-          shortcut = {
-            { desc = "  Find File",    key = "f", action = "FindProjectFiles" },
-            { desc = "  Recent Files", key = "r", action = "Telescope oldfiles" },
-            { desc = "  Grep",         key = "g", action = "Telescope live_grep" },
-            { desc = "  Config",       key = "c", action = "e ~/.config/nvim/init.lua" },
-            { desc = "  Quit",         key = "q", action = "qa" },
+      local function abs_path(path)
+        return vim.fn.resolve(vim.fs.normalize(vim.fn.fnamemodify(path, ":p")))
+      end
+
+      local function under_root(file, root)
+        local rel = vim.fs.relpath(root, file)
+        return rel ~= nil and rel ~= "" and not rel:match("^%.%.")
+      end
+
+      local function trunc_path(path, maxw)
+        if vim.fn.strdisplaywidth(path) <= maxw then
+          return path
+        end
+        local keep = math.max(8, maxw - 1)
+        return "…" .. path:sub(-keep)
+      end
+
+      local function project_recent_files(limit)
+        local root = abs_path(project_root())
+        local seen, out = {}, {}
+        for _, file in ipairs(vim.v.oldfiles or {}) do
+          if file and vim.fn.filereadable(file) == 1 then
+            local full = abs_path(file)
+            if not seen[full] and under_root(full, root) then
+              seen[full] = true
+              table.insert(out, full)
+              if #out >= limit then
+                break
+              end
+            end
+          end
+        end
+        return out, root
+      end
+
+      local function make_header()
+        local date = os.date("%a %d %b  %H:%M")
+        if vim.o.columns >= 52 then
+          return {
+            "",
+            [[███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗]],
+            [[████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║]],
+            [[██╔██╗ ██║█████╗  ██║   ██║██║   ██║██║██╔████╔██║]],
+            [[██║╚██╗██║██╔══╝  ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║]],
+            [[██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║]],
+            [[╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝]],
+            "",
+            date,
+            "",
+          }
+        end
+        return { "", "NVIM", "", date, "" }
+      end
+
+      local function make_center()
+        local items = {
+          { desc = "Find File     ", key = "f", key_format = "  %s", action = "FindProjectFiles" },
+          { desc = "Recent Files  ", key = "r", key_format = "  %s", action = function()
+            local files = project_recent_files(50)
+            require("telescope.pickers").new({}, {
+              prompt_title = "Recent Files",
+              finder = require("telescope.finders").new_table({ results = files }),
+              sorter = require("telescope.config").values.generic_sorter({}),
+              previewer = require("telescope.config").values.file_previewer({}),
+            }):find()
+          end },
+          { desc = "Grep          ", key = "g", key_format = "  %s", action = function()
+            require("telescope.builtin").live_grep({ cwd = project_root() })
+          end },
+          { desc = "New File      ", key = "n", key_format = "  %s", action = "enew" },
+          { desc = "Config        ", key = "c", key_format = "  %s", action = "e ~/.config/nvim/init.lua" },
+          { desc = "Quit          ", key = "q", key_format = "  %s", action = "qa" },
+          { desc = "Recent Files", desc_hl = "Comment" },
+        }
+
+        local files, root = project_recent_files(5)
+        local maxw = math.max(24, vim.o.columns - 18)
+        if #files == 0 then
+          table.insert(items, { desc = "No recent files", desc_hl = "Comment" })
+        else
+          for i, file in ipairs(files) do
+            local rel = vim.fs.relpath(root, file) or file
+            table.insert(items, {
+              desc = trunc_path(rel, maxw),
+              key = tostring(i),
+              key_format = "  %s",
+              action = "e " .. vim.fn.fnameescape(file),
+            })
+          end
+        end
+        return items
+      end
+
+      local function apply_dashboard()
+        require("dashboard").setup({
+          theme = "doom",
+          disable_move = false,
+          config = {
+            header = make_header(),
+            center = make_center(),
+            footer = function()
+              return { "", vim.fn.fnamemodify(abs_path(project_root()), ":~") }
+            end,
+            packages = { enable = false },
           },
-          packages = { enable = true },
-          project = { enable = true, limit = 8 },
-          mru = { enable = true, limit = 10 },
-          footer = {},
-        },
+        })
+      end
+
+      apply_dashboard()
+      vim.api.nvim_create_user_command("Dashboard", function()
+        apply_dashboard()
+        require("dashboard"):instance()
+      end, {})
+      vim.api.nvim_create_autocmd("VimResized", {
+        callback = function()
+          if vim.bo.filetype == "dashboard" then
+            apply_dashboard()
+            require("dashboard"):instance()
+          end
+        end,
       })
     end,
   },
