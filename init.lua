@@ -570,9 +570,8 @@ require("lazy").setup({
 local map = vim.keymap.set
 local o = { noremap = true, silent = true }
 
--- File Tree (Cmd+B works in Neovide/GUI; Ctrl+B or Space+E in terminal)
+-- File Tree (Space+E; Cmd+B in Neovide). Ctrl+B is Herdr's prefix — do not bind it.
 map("n", "<D-b>",    ":NvimTreeToggle<CR>", o)
-map("n", "<C-b>",    ":NvimTreeToggle<CR>", o)
 map("n", "<leader>e",":NvimTreeToggle<CR>", o)
 
 -- Fuzzy find files (Cmd+P / Ctrl+P)

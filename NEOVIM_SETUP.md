@@ -74,7 +74,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+P` | Find file by name |
-| `Ctrl+B` | Toggle file tree |
+| `Space + e` | Toggle file tree |
 | `Space + /` | Search in current file |
 | `Space + fg` | Grep across all files |
 | `Ctrl+S` | Save file |
