@@ -46,7 +46,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | rainbow-delimiters.nvim | Colorized matching brackets |
 | flash.nvim | Jump anywhere on screen with 2 keystrokes |
 | dashboard-nvim | Start screen |
-| neominimap.nvim | VS Code-style file minimap (errors + current line) |
+| (built-in) | Top-right file overview: current line + syntax errors |
 | mason.nvim | LSP server installer UI (`:Mason` to open) |
 | mason-lspconfig.nvim | Auto-installs LSP servers via Mason |
 | nvim-lspconfig | Configures language servers |

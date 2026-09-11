@@ -117,6 +117,186 @@ end
 
 vim.api.nvim_create_user_command("FindProjectFiles", find_project_files, {})
 
+-- Top-right file overview: real code, 40–70% height, hidden unless a real file is open.
+local overview = { win = nil, source_win = nil, locking = false }
+
+local function overview_hide()
+  if overview.win and vim.api.nvim_win_is_valid(overview.win) then
+    pcall(vim.api.nvim_win_close, overview.win, true)
+  end
+  overview.win = nil
+end
+
+local function overview_is_file(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+  if vim.api.nvim_buf_get_name(buf) == "" then
+    return false
+  end
+  if vim.bo[buf].buftype ~= "" then
+    return false
+  end
+  local skip = {
+    NvimTree = true,
+    dashboard = true,
+    lazy = true,
+    mason = true,
+    TelescopePrompt = true,
+    notify = true,
+    noice = true,
+    help = true,
+    qf = true,
+  }
+  return not skip[vim.bo[buf].filetype]
+end
+
+local function overview_layout(buf)
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  local rows = vim.o.lines
+  local cols = vim.o.columns
+  local min_h = math.max(8, math.floor(rows * 0.40))
+  local max_h = math.max(min_h, math.floor(rows * 0.70))
+  local height = math.max(min_h, math.min(max_h, line_count))
+  local width = math.max(20, math.min(36, math.floor(cols * 0.20)))
+  local row = (vim.o.showtabline ~= 0) and 2 or 1
+  local col = math.max(0, cols - width - 1)
+  return height, width, row, col, min_h, max_h, line_count
+end
+
+local function overview_lock_view()
+  if overview.locking then
+    return
+  end
+  if not overview.win or not vim.api.nvim_win_is_valid(overview.win) then
+    return
+  end
+  overview.locking = true
+  local buf = vim.api.nvim_win_get_buf(overview.win)
+  local height = vim.api.nvim_win_get_height(overview.win)
+  local line_count = vim.api.nvim_buf_line_count(buf)
+  local cur = 1
+  local src = overview.source_win
+  if src and vim.api.nvim_win_is_valid(src) then
+    cur = vim.api.nvim_win_get_cursor(src)[1]
+  end
+  if line_count <= height then
+    pcall(vim.api.nvim_win_call, overview.win, function()
+      vim.fn.winrestview({ topline = 1, leftcol = 0 })
+    end)
+    pcall(vim.api.nvim_win_set_cursor, overview.win, { math.min(cur, line_count), 0 })
+  else
+    local topline = math.max(1, math.min(cur - math.floor(height / 2), line_count - height + 1))
+    pcall(vim.api.nvim_win_call, overview.win, function()
+      vim.fn.winrestview({ topline = topline, leftcol = 0 })
+    end)
+    pcall(vim.api.nvim_win_set_cursor, overview.win, { cur, 0 })
+  end
+  overview.locking = false
+end
+
+local function overview_show(buf, source_win)
+  if not overview_is_file(buf) then
+    overview_hide()
+    return
+  end
+  local height, width, row, col = overview_layout(buf)
+  overview.source_win = source_win
+  local cfg = {
+    relative = "editor",
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = "minimal",
+    border = "rounded",
+    focusable = true,
+    zindex = 40,
+    noautocmd = true,
+  }
+  if overview.win and vim.api.nvim_win_is_valid(overview.win) then
+    pcall(vim.api.nvim_win_set_config, overview.win, cfg)
+    pcall(vim.api.nvim_win_set_buf, overview.win, buf)
+  else
+    overview.win = vim.api.nvim_open_win(buf, false, cfg)
+  end
+  local win = overview.win
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].cursorline = true
+  vim.wo[win].wrap = false
+  vim.wo[win].signcolumn = "yes:1"
+  vim.wo[win].foldcolumn = "0"
+  vim.wo[win].statuscolumn = ""
+  vim.wo[win].winfixheight = true
+  vim.wo[win].winfixwidth = true
+  vim.wo[win].scrolloff = 0
+  vim.wo[win].sidescrolloff = 0
+  vim.wo[win].winhighlight = "Normal:Normal,CursorLine:OverviewCursorLine,FloatBorder:FloatBorder"
+  overview_lock_view()
+end
+
+local function overview_refresh()
+  local win = vim.api.nvim_get_current_win()
+  if overview.win and win == overview.win then
+    return
+  end
+  overview_show(vim.api.nvim_get_current_buf(), win)
+end
+
+vim.api.nvim_set_hl(0, "OverviewCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
+vim.api.nvim_create_autocmd("ColorScheme", {
+  callback = function()
+    vim.api.nvim_set_hl(0, "OverviewCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
+  end,
+})
+
+local overview_group = vim.api.nvim_create_augroup("FileOverview", { clear = true })
+vim.api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "VimResized", "BufWritePost" }, {
+  group = overview_group,
+  callback = function()
+    vim.schedule(overview_refresh)
+  end,
+})
+vim.api.nvim_create_autocmd("CursorMoved", {
+  group = overview_group,
+  callback = function()
+    if vim.api.nvim_get_current_win() ~= overview.win then
+      overview_lock_view()
+    end
+  end,
+})
+vim.api.nvim_create_autocmd("WinEnter", {
+  group = overview_group,
+  callback = function()
+    if vim.api.nvim_get_current_win() ~= overview.win then
+      return
+    end
+    local pos = vim.api.nvim_win_get_cursor(overview.win)
+    local src = overview.source_win
+    if src and vim.api.nvim_win_is_valid(src) then
+      vim.api.nvim_set_current_win(src)
+      pcall(vim.api.nvim_win_set_cursor, src, pos)
+    end
+  end,
+})
+vim.api.nvim_create_autocmd("WinScrolled", {
+  group = overview_group,
+  callback = function(ev)
+    if tonumber(ev.match) == overview.win then
+      overview_lock_view()
+    end
+  end,
+})
+vim.api.nvim_create_autocmd("WinClosed", {
+  group = overview_group,
+  callback = function(ev)
+    if tonumber(ev.match) == overview.win then
+      overview.win = nil
+    end
+  end,
+})
+
 -- Config repo updates (origin/main vs this clone of nvim-config).
 local nvim_config_dir = vim.fn.stdpath("config")
 local nvim_config_behind = 0
@@ -615,50 +795,6 @@ require("lazy").setup({
           mru = { enable = true, limit = 10 },
           footer = {},
         },
-      })
-    end,
-  },
-
-  -- ── Minimap (VS Code-style overview on the right) ─────────────────────────
-  {
-    "Isrothy/neominimap.nvim",
-    version = "^3",
-    lazy = false,
-    init = function()
-      vim.g.neominimap = {
-        auto_enable = true,
-        layout = "split",
-        current_line_position = "percent",
-        sync_cursor = true,
-        click = { enabled = true, auto_switch_focus = false },
-        exclude_filetypes = {
-          "help", "NvimTree", "dashboard", "lazy", "mason",
-          "TelescopePrompt", "notify", "noice", "qf",
-        },
-        split = {
-          minimap_width = 14,
-          fix_width = true,
-          direction = "right",
-          close_if_last_window = true,
-        },
-        diagnostic = {
-          enabled = true,
-          severity = vim.diagnostic.severity.ERROR,
-          mode = "line",
-        },
-        git = { enabled = false },
-        treesitter = { enabled = true },
-      }
-    end,
-    config = function()
-      local function paint_minimap()
-        vim.api.nvim_set_hl(0, "NeominimapCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
-        vim.api.nvim_set_hl(0, "NeominimapErrorLine", { bg = "#f38ba8" })
-      end
-      paint_minimap()
-      vim.api.nvim_create_autocmd("ColorScheme", {
-        group = vim.api.nvim_create_augroup("NeominimapColors", { clear = true }),
-        callback = paint_minimap,
       })
     end,
   },
