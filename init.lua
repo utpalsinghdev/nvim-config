@@ -56,7 +56,7 @@ local function close_buffer(bufnr)
 
   local replacement
   for _, b in ipairs(vim.api.nvim_list_bufs()) do
-    if b ~= bufnr and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buflisted and vim.bo[b].buftype == "" then
+    if b ~= bufnr and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buflisted and vim.bo[b].buftype == "" and vim.api.nvim_buf_get_name(b) ~= "" then
       replacement = b
       break
     end
@@ -65,13 +65,26 @@ local function close_buffer(bufnr)
   for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
     if replacement then
       vim.api.nvim_win_set_buf(win, replacement)
-    else
-      vim.api.nvim_win_set_buf(win, vim.api.nvim_create_buf(true, false))
     end
   end
 
   if vim.api.nvim_buf_is_valid(bufnr) then
     pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+  end
+
+  if not replacement then
+    overview_hide()
+    pcall(vim.cmd.Dashboard)
+    for _, b in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(b)
+        and vim.bo[b].buflisted
+        and vim.api.nvim_buf_get_name(b) == ""
+        and not vim.bo[b].modified
+        and vim.bo[b].filetype ~= "dashboard"
+      then
+        pcall(vim.api.nvim_buf_delete, b, { force = true })
+      end
+    end
   end
 end
 
