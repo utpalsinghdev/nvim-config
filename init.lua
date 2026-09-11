@@ -47,6 +47,17 @@ opt.updatetime = 250
 opt.timeoutlen = 300
 opt.conceallevel = 0
 
+-- Save when leaving insert (Esc / Ctrl-[), if the buffer is a real writable file.
+vim.api.nvim_create_autocmd("InsertLeave", {
+  group = vim.api.nvim_create_augroup("AutoSaveOnInsertLeave", { clear = true }),
+  callback = function()
+    if vim.bo.buftype ~= "" or vim.bo.readonly or vim.api.nvim_buf_get_name(0) == "" then
+      return
+    end
+    vim.cmd("silent! update")
+  end,
+})
+
 -- Close a buffer without closing its window (so the file tree cannot swallow the editor).
 local function close_buffer(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()

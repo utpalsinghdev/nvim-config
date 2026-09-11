@@ -78,6 +78,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Ctrl+F` / `Space + /` | Search in current file |
 | `Ctrl+Shift+F` / `Space + fg` | Grep across all files |
 | `Ctrl+S` | Save file |
+| `Esc` | Leave insert mode (also saves the file) |
 | `Ctrl+A` | Select all |
 | `Ctrl+W` | Close buffer |
 | `Alt+J` / `Alt+K` | Move line down / up |
