@@ -16,8 +16,14 @@ if ! need nvim; then
   exit 1
 fi
 
+if ! need fd && need fdfind; then
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
 if ! need rg || ! need fd; then
-  echo "Install ripgrep and fd (fuzzy file find + live grep need them), then re-run."
+  echo "Install ripgrep and fd (Debian: apt install ripgrep fd-find). Then re-run."
   exit 1
 fi
 
