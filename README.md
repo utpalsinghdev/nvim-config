@@ -27,6 +27,8 @@ git clone https://github.com/utpalsinghdev/nvim-config.git ~/.config/nvim
 
 On Windows PowerShell, the clone target is `$env:LOCALAPPDATA\nvim` (see below).
 
+`git clone … ~/.config/nvim` **fails** if that folder already exists (`fatal: destination path … already exists`). Fedora, Debian, and macOS often create an empty or leftover `~/.config/nvim` the first time you open Neovim. First-install steps below move it to `nvim.bak` before cloning. If `nvim.bak` is already there, rename it first.
+
 ---
 
 ## macOS
@@ -42,6 +44,10 @@ Needs Homebrew, Git, and a compiler (`xcode-select --install` if `make` is missi
 brew install neovim ripgrep fd git
 brew install --cask font-jetbrains-mono-nerd-font
 xcode-select --install 2>/dev/null || true
+
+# Leftover folder is common even on a "new" machine.
+[ -e ~/.config/nvim ] && mv ~/.config/nvim ~/.config/nvim.bak
+[ -e ~/.local/share/nvim ] && mv ~/.local/share/nvim ~/.local/share/nvim.bak
 
 git clone git@github.com:utpalsinghdev/nvim-config.git ~/.config/nvim
 cd ~/.config/nvim
@@ -102,6 +108,9 @@ winget install --id Git.Git -e
 winget install --id Neovim.Neovim -e
 winget install --id BurntSushi.ripgrep.MSVC -e
 winget install --id sharkdp.fd -e
+
+if (Test-Path $env:LOCALAPPDATA\nvim) { Move-Item $env:LOCALAPPDATA\nvim $env:LOCALAPPDATA\nvim.bak }
+if (Test-Path $env:LOCALAPPDATA\nvim-data) { Move-Item $env:LOCALAPPDATA\nvim-data $env:LOCALAPPDATA\nvim-data.bak }
 
 git clone git@github.com:utpalsinghdev/nvim-config.git $env:LOCALAPPDATA\nvim
 nvim --headless "+Lazy! sync" +qa
@@ -165,6 +174,9 @@ mkdir -p ~/.local/bin
 ln -sf "$(command -v fdfind)" ~/.local/bin/fd
 export PATH="$HOME/.local/bin:$PATH"
 
+[ -e ~/.config/nvim ] && mv ~/.config/nvim ~/.config/nvim.bak
+[ -e ~/.local/share/nvim ] && mv ~/.local/share/nvim ~/.local/share/nvim.bak
+
 git clone git@github.com:utpalsinghdev/nvim-config.git ~/.config/nvim
 cd ~/.config/nvim
 chmod +x install.sh
@@ -221,6 +233,9 @@ Font: [JetBrainsMono Nerd Font](https://www.nerdfonts.com/font-downloads).
 
 ```bash
 sudo dnf install -y git neovim ripgrep fd-find make gcc unzip
+
+[ -e ~/.config/nvim ] && mv ~/.config/nvim ~/.config/nvim.bak
+[ -e ~/.local/share/nvim ] && mv ~/.local/share/nvim ~/.local/share/nvim.bak
 
 git clone git@github.com:utpalsinghdev/nvim-config.git ~/.config/nvim
 cd ~/.config/nvim
