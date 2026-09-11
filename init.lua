@@ -227,7 +227,7 @@ require("lazy").setup({
     config = function()
       require("lualine").setup({
         options = {
-          theme = "catppuccin",
+          theme = "catppuccin-mocha",
           component_separators = { left = "", right = "" },
           section_separators = { left = "", right = "" },
           globalstatus = true,
@@ -412,12 +412,17 @@ require("lazy").setup({
     "williamboman/mason-lspconfig.nvim",
     dependencies = { "williamboman/mason.nvim" },
     config = function()
+      -- gopls needs a Go toolchain; skip it unless `go` is on PATH
+      local ensure = {
+        "lua_ls", "ts_ls", "pyright",
+        "rust_analyzer", "html", "cssls", "jsonls",
+      }
+      if vim.fn.executable("go") == 1 then
+        table.insert(ensure, "gopls")
+      end
       require("mason-lspconfig").setup({
-        ensure_installed = {
-          "lua_ls", "ts_ls", "pyright", "gopls",
-          "rust_analyzer", "html", "cssls", "jsonls",
-        },
-        automatic_installation = true,
+        ensure_installed = ensure,
+        automatic_enable = false,
       })
     end,
   },
@@ -449,9 +454,12 @@ require("lazy").setup({
       })
 
       local servers = {
-        "lua_ls", "ts_ls", "pyright", "gopls",
+        "lua_ls", "ts_ls", "pyright",
         "rust_analyzer", "html", "cssls", "jsonls",
       }
+      if vim.fn.executable("go") == 1 then
+        table.insert(servers, "gopls")
+      end
       for _, server in ipairs(servers) do
         vim.lsp.config(server, { capabilities = capabilities })
         vim.lsp.enable(server)
