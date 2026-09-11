@@ -46,10 +46,10 @@ brew install --cask font-jetbrains-mono-nerd-font
 | rainbow-delimiters.nvim | Colorized matching brackets |
 | flash.nvim | Jump anywhere on screen with 2 keystrokes |
 | dashboard-nvim | Start screen |
-| (built-in) | Top-right file overview: current line + syntax errors |
+| neominimap.nvim | Right-side file minimap (braille dots, errors, current line) |
 | mason.nvim | LSP server installer UI (`:Mason` to open) |
 | mason-lspconfig.nvim | Auto-installs LSP servers via Mason |
-| nvim-lspconfig | Configures language servers |
+| nvim-lspconfig | Configures language servers (includes ESLint for JS/TS) |
 | nvim-cmp | Autocomplete popup |
 | LuaSnip | Snippet engine |
 | conform.nvim | Auto-format on save |

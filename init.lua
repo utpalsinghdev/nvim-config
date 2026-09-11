@@ -129,186 +129,6 @@ end
 
 vim.api.nvim_create_user_command("FindProjectFiles", find_project_files, {})
 
--- Top-right file overview: real code, 40–70% height, hidden unless a real file is open.
-local overview = { win = nil, source_win = nil, locking = false }
-
-local function overview_hide()
-  if overview.win and vim.api.nvim_win_is_valid(overview.win) then
-    pcall(vim.api.nvim_win_close, overview.win, true)
-  end
-  overview.win = nil
-end
-
-local function overview_is_file(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then
-    return false
-  end
-  if vim.api.nvim_buf_get_name(buf) == "" then
-    return false
-  end
-  if vim.bo[buf].buftype ~= "" then
-    return false
-  end
-  local skip = {
-    NvimTree = true,
-    dashboard = true,
-    lazy = true,
-    mason = true,
-    TelescopePrompt = true,
-    notify = true,
-    noice = true,
-    help = true,
-    qf = true,
-  }
-  return not skip[vim.bo[buf].filetype]
-end
-
-local function overview_layout(buf)
-  local line_count = vim.api.nvim_buf_line_count(buf)
-  local rows = vim.o.lines
-  local cols = vim.o.columns
-  local min_h = math.max(8, math.floor(rows * 0.40))
-  local max_h = math.max(min_h, math.floor(rows * 0.70))
-  local height = math.max(min_h, math.min(max_h, line_count))
-  local width = math.max(20, math.min(36, math.floor(cols * 0.20)))
-  local row = (vim.o.showtabline ~= 0) and 2 or 1
-  local col = math.max(0, cols - width - 1)
-  return height, width, row, col, min_h, max_h, line_count
-end
-
-local function overview_lock_view()
-  if overview.locking then
-    return
-  end
-  if not overview.win or not vim.api.nvim_win_is_valid(overview.win) then
-    return
-  end
-  overview.locking = true
-  local buf = vim.api.nvim_win_get_buf(overview.win)
-  local height = vim.api.nvim_win_get_height(overview.win)
-  local line_count = vim.api.nvim_buf_line_count(buf)
-  local cur = 1
-  local src = overview.source_win
-  if src and vim.api.nvim_win_is_valid(src) then
-    cur = vim.api.nvim_win_get_cursor(src)[1]
-  end
-  if line_count <= height then
-    pcall(vim.api.nvim_win_call, overview.win, function()
-      vim.fn.winrestview({ topline = 1, leftcol = 0 })
-    end)
-    pcall(vim.api.nvim_win_set_cursor, overview.win, { math.min(cur, line_count), 0 })
-  else
-    local topline = math.max(1, math.min(cur - math.floor(height / 2), line_count - height + 1))
-    pcall(vim.api.nvim_win_call, overview.win, function()
-      vim.fn.winrestview({ topline = topline, leftcol = 0 })
-    end)
-    pcall(vim.api.nvim_win_set_cursor, overview.win, { cur, 0 })
-  end
-  overview.locking = false
-end
-
-local function overview_show(buf, source_win)
-  if not overview_is_file(buf) then
-    overview_hide()
-    return
-  end
-  local height, width, row, col = overview_layout(buf)
-  overview.source_win = source_win
-  local cfg = {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = "minimal",
-    border = "rounded",
-    focusable = true,
-    zindex = 40,
-    noautocmd = true,
-  }
-  if overview.win and vim.api.nvim_win_is_valid(overview.win) then
-    pcall(vim.api.nvim_win_set_config, overview.win, cfg)
-    pcall(vim.api.nvim_win_set_buf, overview.win, buf)
-  else
-    overview.win = vim.api.nvim_open_win(buf, false, cfg)
-  end
-  local win = overview.win
-  vim.wo[win].number = false
-  vim.wo[win].relativenumber = false
-  vim.wo[win].cursorline = true
-  vim.wo[win].wrap = false
-  vim.wo[win].signcolumn = "yes:1"
-  vim.wo[win].foldcolumn = "0"
-  vim.wo[win].statuscolumn = ""
-  vim.wo[win].winfixheight = true
-  vim.wo[win].winfixwidth = true
-  vim.wo[win].scrolloff = 0
-  vim.wo[win].sidescrolloff = 0
-  vim.wo[win].winhighlight = "Normal:Normal,CursorLine:OverviewCursorLine,FloatBorder:FloatBorder"
-  overview_lock_view()
-end
-
-local function overview_refresh()
-  local win = vim.api.nvim_get_current_win()
-  if overview.win and win == overview.win then
-    return
-  end
-  overview_show(vim.api.nvim_get_current_buf(), win)
-end
-
-vim.api.nvim_set_hl(0, "OverviewCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
-vim.api.nvim_create_autocmd("ColorScheme", {
-  callback = function()
-    vim.api.nvim_set_hl(0, "OverviewCursorLine", { bg = "#89b4fa", fg = "#1e1e2e" })
-  end,
-})
-
-local overview_group = vim.api.nvim_create_augroup("FileOverview", { clear = true })
-vim.api.nvim_create_autocmd({ "BufWinEnter", "BufEnter", "WinEnter", "VimResized", "BufWritePost" }, {
-  group = overview_group,
-  callback = function()
-    vim.schedule(overview_refresh)
-  end,
-})
-vim.api.nvim_create_autocmd("CursorMoved", {
-  group = overview_group,
-  callback = function()
-    if vim.api.nvim_get_current_win() ~= overview.win then
-      overview_lock_view()
-    end
-  end,
-})
-vim.api.nvim_create_autocmd("WinEnter", {
-  group = overview_group,
-  callback = function()
-    if vim.api.nvim_get_current_win() ~= overview.win then
-      return
-    end
-    local pos = vim.api.nvim_win_get_cursor(overview.win)
-    local src = overview.source_win
-    if src and vim.api.nvim_win_is_valid(src) then
-      vim.api.nvim_set_current_win(src)
-      pcall(vim.api.nvim_win_set_cursor, src, pos)
-    end
-  end,
-})
-vim.api.nvim_create_autocmd("WinScrolled", {
-  group = overview_group,
-  callback = function(ev)
-    if tonumber(ev.match) == overview.win then
-      overview_lock_view()
-    end
-  end,
-})
-vim.api.nvim_create_autocmd("WinClosed", {
-  group = overview_group,
-  callback = function(ev)
-    if tonumber(ev.match) == overview.win then
-      overview.win = nil
-    end
-  end,
-})
-
 -- Config repo updates (origin/main vs this clone of nvim-config).
 local nvim_config_dir = vim.fn.stdpath("config")
 local nvim_config_behind = 0
@@ -420,7 +240,15 @@ require("lazy").setup({
       require("catppuccin").setup({
         flavour = "mocha",
         transparent_background = true,
-        dim_inactive = { enabled = true, shade = "dark", percentage = 0.15 },
+        dim_inactive = { enabled = false },
+        lsp_styles = {
+          underlines = {
+            errors = { "underline" },
+            warnings = { "underline" },
+            hints = { "underline" },
+            information = { "underline" },
+          },
+        },
         integrations = {
           nvimtree = true,
           telescope = { enabled = true },
@@ -436,6 +264,18 @@ require("lazy").setup({
         },
       })
       vim.cmd.colorscheme("catppuccin")
+      local function minimap_transparent()
+        vim.api.nvim_set_hl(0, "NeominimapBackground", { bg = "NONE" })
+        vim.api.nvim_set_hl(0, "NeominimapBorder", { bg = "NONE", fg = "NONE" })
+        -- Plain underline so errors show even when the terminal cannot draw undercurl.
+        vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { underline = true, sp = "#f38ba8" })
+        vim.api.nvim_set_hl(0, "DiagnosticUnderlineWarn", { underline = true, sp = "#f9e2af" })
+      end
+      minimap_transparent()
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = vim.api.nvim_create_augroup("NeominimapTransparent", { clear = true }),
+        callback = minimap_transparent,
+      })
     end,
   },
 
@@ -540,6 +380,53 @@ require("lazy").setup({
         open = { enable = true },
         close = { enable = true },
       })
+    end,
+  },
+
+  -- ── Minimap (braille dots on the right; terminal cannot shrink the font) ──
+  {
+    "Isrothy/neominimap.nvim",
+    version = "^3",
+    lazy = false,
+    init = function()
+      vim.g.neominimap = {
+        auto_enable = true,
+        layout = "split",
+        current_line_position = "percent",
+        sync_cursor = true,
+        click = { enabled = true, auto_switch_focus = false },
+        exclude_filetypes = {
+          "help", "NvimTree", "dashboard", "lazy", "mason",
+          "TelescopePrompt", "notify", "noice", "qf",
+        },
+        split = {
+          minimap_width = 14,
+          fix_width = true,
+          direction = "right",
+          close_if_last_window = true,
+        },
+        diagnostic = {
+          enabled = true,
+          severity = { min = vim.diagnostic.severity.WARN },
+          mode = "line",
+        },
+        git = { enabled = true, mode = "sign" },
+        search = { enabled = false },
+        treesitter = { enabled = true },
+        winopt = function(opt)
+          opt.winhighlight = table.concat({
+            "Normal:NeominimapBackground",
+            "NormalNC:NeominimapBackground",
+            "EndOfBuffer:NeominimapBackground",
+            "SignColumn:NeominimapBackground",
+            "FloatBorder:NeominimapBorder",
+            "CursorLine:NeominimapCursorLine",
+            "CursorLineNr:NeominimapCursorLineNr",
+            "CursorLineSign:NeominimapCursorLineSign",
+            "CursorLineFold:NeominimapCursorLineFold",
+          }, ",")
+        end,
+      }
     end,
   },
 
@@ -928,7 +815,7 @@ require("lazy").setup({
     config = function()
       -- gopls needs a Go toolchain; skip it unless `go` is on PATH
       local ensure = {
-        "lua_ls", "ts_ls", "pyright",
+        "lua_ls", "ts_ls", "eslint", "pyright",
         "rust_analyzer", "html", "cssls", "jsonls",
       }
       if vim.fn.executable("go") == 1 then
@@ -968,23 +855,65 @@ require("lazy").setup({
       })
 
       local servers = {
-        "lua_ls", "ts_ls", "pyright",
+        "lua_ls", "ts_ls", "eslint", "pyright",
         "rust_analyzer", "html", "cssls", "jsonls",
       }
       if vim.fn.executable("go") == 1 then
         table.insert(servers, "gopls")
       end
       for _, server in ipairs(servers) do
-        vim.lsp.config(server, { capabilities = capabilities })
+        local opts = { capabilities = capabilities }
+        if server == "eslint" then
+          opts.settings = { workingDirectories = { mode = "auto" } }
+        elseif server == "ts_ls" then
+          opts.settings = {
+            javascript = { suggestionActions = { enabled = false } },
+            typescript = { suggestionActions = { enabled = false } },
+          }
+        end
+        vim.lsp.config(server, opts)
         vim.lsp.enable(server)
       end
 
+      -- JS files often get real tsserver problems as HINT (e.g. 2570 "Could not find name").
+      -- 8xxxx codes are suggestions (80001 = convert CommonJS to ESM).
+      local publish = vim.lsp.handlers["textDocument/publishDiagnostics"]
+      vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, cfg)
+        if result and result.diagnostics then
+          local keep = {}
+          for _, d in ipairs(result.diagnostics) do
+            local code = tonumber(d.code)
+            if code ~= 80001 and code ~= 80004 then
+              if code and code >= 2000 and code < 6000 then
+                d.severity = vim.diagnostic.severity.ERROR
+              end
+              keep[#keep + 1] = d
+            end
+          end
+          result.diagnostics = keep
+        end
+        return publish(err, result, ctx, cfg)
+      end
+
       vim.diagnostic.config({
-        virtual_text  = true,
-        signs         = true,
-        underline     = true,
-        update_in_insert = false,
-        float         = { border = "rounded" },
+        virtual_text = {
+          severity = { min = vim.diagnostic.severity.ERROR },
+          prefix = "●",
+          spacing = 1,
+        },
+        underline = { severity = { min = vim.diagnostic.severity.WARN } },
+        signs = {
+          severity = { min = vim.diagnostic.severity.WARN },
+          text = {
+            [vim.diagnostic.severity.ERROR] = "E",
+            [vim.diagnostic.severity.WARN] = "W",
+            [vim.diagnostic.severity.INFO] = "I",
+            [vim.diagnostic.severity.HINT] = "",
+          },
+        },
+        update_in_insert = true,
+        severity_sort = true,
+        float = { border = "rounded" },
       })
     end,
   },
