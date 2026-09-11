@@ -47,6 +47,34 @@ opt.updatetime = 250
 opt.timeoutlen = 300
 opt.conceallevel = 0
 
+-- Close a buffer without closing its window (so the file tree cannot swallow the editor).
+local function close_buffer(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+
+  local replacement
+  for _, b in ipairs(vim.api.nvim_list_bufs()) do
+    if b ~= bufnr and vim.api.nvim_buf_is_valid(b) and vim.bo[b].buflisted and vim.bo[b].buftype == "" then
+      replacement = b
+      break
+    end
+  end
+
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    if replacement then
+      vim.api.nvim_win_set_buf(win, replacement)
+    else
+      vim.api.nvim_win_set_buf(win, vim.api.nvim_create_buf(true, false))
+    end
+  end
+
+  if vim.api.nvim_buf_is_valid(bufnr) then
+    pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+  end
+end
+
 -- ============================================================================
 -- Plugins
 -- ============================================================================
@@ -255,6 +283,9 @@ require("lazy").setup({
           mode = "buffers",
           show_buffer_close_icons = true,
           show_close_icon = false,
+          always_show_bufferline = true,
+          close_command = close_buffer,
+          right_mouse_command = close_buffer,
           separator_style = "slant",
           diagnostics = false,
           offsets = {
@@ -599,7 +630,7 @@ map({ "n", "i", "v" }, "<D-s>", "<Esc>:w<CR>", o)
 map("n", "<C-s>", ":w<CR>", o)
 
 -- Close buffer (Cmd+W)
-map("n", "<D-w>", ":bd<CR>", o)
+map("n", "<D-w>", close_buffer, o)
 
 -- Navigate buffers like VSCode tabs (Shift+H / Shift+L)
 map("n", "<S-l>", ":bnext<CR>",     o)
