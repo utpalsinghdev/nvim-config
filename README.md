@@ -1,37 +1,26 @@
 # Neovim config
 
-Single-file config (`init.lua`) plus plugin lockfile. Plugins are installed on first launch by [lazy.nvim](https://github.com/folke/lazy.nvim); they live in Neovim's data directory, not in this repo.
+`init.lua` is the full setup: fuzzy search (Telescope), file tree, LSP, Copilot, and the rest. Plugin **source** is not copied into git — `install.sh` (or the first `nvim` launch) downloads it from the plugin list in `init.lua`, pinned by `lazy-lock.json`.
 
-See [NEOVIM_SETUP.md](./NEOVIM_SETUP.md) for plugins, shortcuts, and macOS packages.
+See [NEOVIM_SETUP.md](./NEOVIM_SETUP.md) for shortcuts.
 
-## Install on a new machine
-
-```bash
-brew install neovim ripgrep fd
-brew install --cask font-jetbrains-mono-nerd-font
-```
-
-Set the terminal font to **JetBrainsMono Nerd Font**.
-
-If `~/.config/nvim` already exists, move it aside first:
+## New machine (clone + one install)
 
 ```bash
-mv ~/.config/nvim ~/.config/nvim.bak
+mv ~/.config/nvim ~/.config/nvim.bak   # only if that folder already exists
 git clone git@github.com:utpalsinghdev/nvim-config.git ~/.config/nvim
+cd ~/.config/nvim
+chmod +x install.sh
+./install.sh
 nvim
 ```
 
-First launch clones plugins. Wait until lazy.nvim finishes, then restart Neovim once.
+`install.sh` installs Neovim, ripgrep, and fd on macOS (Homebrew), then runs a headless `Lazy sync` so every plugin is on disk before you open the editor.
 
-HTTPS clone if you do not use SSH:
+Set the terminal font to **JetBrainsMono Nerd Font**. Copilot still needs `:Copilot auth` once per machine.
+
+HTTPS:
 
 ```bash
 git clone https://github.com/utpalsinghdev/nvim-config.git ~/.config/nvim
 ```
-
-## What is not in this repo
-
-- Plugin source (downloaded to `~/.local/share/nvim`)
-- LSP servers installed by Mason (`~/.local/share/nvim/mason`)
-- Undo history, swap, and local state
-- Copilot / GitHub login (each machine authenticates itself)
