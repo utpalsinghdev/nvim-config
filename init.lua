@@ -39,6 +39,7 @@ opt.sidescrolloff = 8
 opt.splitbelow = true
 opt.splitright = true
 opt.mouse = "a"
+opt.mousescroll = "ver:8,hor:2"
 opt.clipboard = "unnamedplus"
 opt.undofile = true
 opt.swapfile = false
@@ -385,7 +386,7 @@ require("lazy").setup({
         },
         scroll = {
           enable = true,
-          timing = animate.gen_timing.quadratic({ duration = 200, unit = "total" }),
+          timing = animate.gen_timing.quadratic({ duration = 80, unit = "total" }),
         },
         resize = { enable = true },
         open = { enable = true },
@@ -485,6 +486,34 @@ require("lazy").setup({
     "nvim-lualine/lualine.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
+      local repo_diff = { added = 0, removed = 0 }
+      local repo_diff_gen = 0
+
+      local function refresh_repo_diff()
+        repo_diff_gen = repo_diff_gen + 1
+        local gen = repo_diff_gen
+        local root = vim.fn.fnamemodify(project_root(), ":p")
+        vim.system({ "git", "-C", root, "diff", "--numstat", "HEAD" }, { text = true }, function(obj)
+          if gen ~= repo_diff_gen then
+            return
+          end
+          local added, removed = 0, 0
+          for line in (obj.stdout or ""):gmatch("[^\n]+") do
+            local add, del = line:match("^(%S+)\t(%S+)\t")
+            added = added + (tonumber(add) or 0)
+            removed = removed + (tonumber(del) or 0)
+          end
+          vim.schedule(function()
+            if gen ~= repo_diff_gen then
+              return
+            end
+            repo_diff.added = added
+            repo_diff.removed = removed
+            pcall(vim.cmd.redrawstatus)
+          end)
+        end)
+      end
+
       require("lualine").setup({
         options = {
           theme = "catppuccin-mocha",
@@ -493,9 +522,77 @@ require("lazy").setup({
           globalstatus = true,
         },
         sections = {
-          lualine_a = { "mode" },
-          lualine_b = { "branch", "diff", "diagnostics" },
-          lualine_c = { { "filename", path = 1 } },
+          lualine_a = {
+            {
+              "mode",
+              fmt = function(name)
+                local short = {
+                  ["NORMAL"] = "N",
+                  ["INSERT"] = "I",
+                  ["VISUAL"] = "V",
+                  ["V-LINE"] = "VL",
+                  ["V-BLOCK"] = "VB",
+                  ["SELECT"] = "S",
+                  ["S-LINE"] = "SL",
+                  ["S-BLOCK"] = "SB",
+                  ["REPLACE"] = "R",
+                  ["V-REPLACE"] = "VR",
+                  ["COMMAND"] = "C",
+                  ["EX"] = "X",
+                  ["TERMINAL"] = "T",
+                }
+                return short[name] or name:sub(1, 1)
+              end,
+            },
+          },
+          lualine_b = {
+            "branch",
+            {
+              function()
+                if repo_diff.added == 0 then
+                  return ""
+                end
+                return "+" .. repo_diff.added
+              end,
+              color = { fg = "#a6e3a1" },
+              cond = function()
+                return repo_diff.added > 0
+              end,
+            },
+            {
+              function()
+                if repo_diff.removed == 0 then
+                  return ""
+                end
+                return "-" .. repo_diff.removed
+              end,
+              color = { fg = "#f38ba8" },
+              cond = function()
+                return repo_diff.removed > 0
+              end,
+            },
+            "diagnostics",
+          },
+          lualine_c = {
+            { "filename", path = 1 },
+            {
+              "diff",
+              source = function()
+                local gs = vim.b.gitsigns_status_dict
+                if not gs then
+                  return nil
+                end
+                return {
+                  added = gs.added,
+                  modified = gs.changed,
+                  removed = gs.removed,
+                }
+              end,
+              symbols = { added = "+", modified = "~", removed = "-" },
+              colored = true,
+              padding = { left = 1, right = 0 },
+            },
+          },
           lualine_x = { "encoding", "fileformat", "filetype" },
           lualine_y = { "progress" },
           lualine_z = {
@@ -528,6 +625,10 @@ require("lazy").setup({
         callback = function()
           vim.defer_fn(nvim_config_fetch_behind, 800)
         end,
+      })
+      vim.api.nvim_create_autocmd({ "VimEnter", "BufWritePost" }, {
+        group = vim.api.nvim_create_augroup("RepoDiffStatus", { clear = true }),
+        callback = refresh_repo_diff,
       })
       local timer = vim.uv.new_timer()
       if timer then

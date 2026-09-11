@@ -124,7 +124,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `w` / `b` | Jump word forward / backward |
 | `0` / `$` | Start / End of line |
 | `gg` / `G` | Top / Bottom of file |
-| `Ctrl+d` / `Ctrl+u` | Half page down / up (animated) |
+| `Ctrl+d` / `Ctrl+u` | Half page down / up |
 | `s` | Flash jump — type 2 chars to teleport anywhere on screen |
 
 ### Editing
