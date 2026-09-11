@@ -276,8 +276,9 @@ require("lazy").setup({
   {
     "akinsho/bufferline.nvim",
     version = "*",
-    dependencies = "nvim-tree/nvim-web-devicons",
+    dependencies = { "nvim-tree/nvim-web-devicons", "catppuccin/nvim" },
     config = function()
+      local C = require("catppuccin.palettes").get_palette("mocha")
       require("bufferline").setup({
         options = {
           mode = "buffers",
@@ -288,6 +289,7 @@ require("lazy").setup({
           right_mouse_command = close_buffer,
           separator_style = "slant",
           diagnostics = false,
+          indicator = { style = "icon", icon = "▎" },
           offsets = {
             {
               filetype = "NvimTree",
@@ -297,6 +299,31 @@ require("lazy").setup({
             },
           },
         },
+        highlights = require("catppuccin.special.bufferline").get_theme({
+          styles = { "bold" },
+          custom = {
+            all = {
+              fill = { bg = C.crust },
+              background = { fg = C.overlay0, bg = C.mantle },
+              buffer_visible = { fg = C.overlay0, bg = C.mantle },
+              buffer_selected = { fg = C.text, bg = C.surface0, style = { "bold" } },
+              duplicate = { fg = C.overlay0, bg = C.mantle },
+              duplicate_visible = { fg = C.overlay0, bg = C.mantle },
+              duplicate_selected = { fg = C.text, bg = C.surface0, style = { "bold" } },
+              separator = { fg = C.crust, bg = C.mantle },
+              separator_visible = { fg = C.crust, bg = C.mantle },
+              separator_selected = { fg = C.crust, bg = C.surface0 },
+              close_button = { fg = C.overlay0, bg = C.mantle },
+              close_button_visible = { fg = C.overlay0, bg = C.mantle },
+              close_button_selected = { fg = C.red, bg = C.surface0 },
+              indicator_visible = { fg = C.mantle, bg = C.mantle },
+              indicator_selected = { fg = C.mauve, bg = C.surface0 },
+              modified = { fg = C.peach, bg = C.mantle },
+              modified_visible = { fg = C.peach, bg = C.mantle },
+              modified_selected = { fg = C.peach, bg = C.surface0 },
+            },
+          },
+        }),
       })
     end,
   },
