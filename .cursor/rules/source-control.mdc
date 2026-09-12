@@ -1,0 +1,14 @@
+---
+description: Source Control sidebar must stay a float; do not regress layout or click behavior
+globs: lua/source_control.lua
+alwaysApply: false
+---
+
+# Source Control
+
+Read `docs/source-control.md` and `AGENTS.md` before editing.
+
+- The panel is a float on the NvimTree window. Never `split` under the tree.
+- Do not open `vim.ui.input` on mouse click. Stage/unstage on file clicks only. `i` edits the message.
+- Generate (`✦`) must use Copilot Chat **headless**. Close chat windows; time out "Generating…".
+- Keep filetype `SourceControl` and window_picker disabled in `init.lua`.

@@ -1,0 +1,15 @@
+---
+description: How this Neovim config is structured and what not to break
+alwaysApply: true
+---
+
+# nvim-config
+
+Personal VS Code–like Neovim setup. Entry points: `AGENTS.md`, then `init.lua`.
+
+- Keep plugin specs and keymaps in `init.lua`. New Source Control logic stays in `lua/source_control.lua`.
+- Sidebar title is the project folder name, not "Explorer".
+- Do not give the file tree Ctrl+B; it is `<leader>e`.
+- After adding a plugin, update `lazy-lock.json` via Lazy sync.
+- Do not add Co-authored-by or agent attribution on commits.
+- Install docs for humans are `README.md`. Do not rewrite them unless asked.
