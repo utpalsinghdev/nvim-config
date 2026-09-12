@@ -319,9 +319,7 @@ require("lazy").setup({
         renderer = {
           group_empty = true,
           highlight_git = true,
-          root_folder_label = function(path)
-            return vim.fn.fnamemodify(path, ":t")
-          end,
+          root_folder_label = false,
           icons = {
             show = { file = true, folder = true, folder_arrow = true, git = true },
           },
@@ -658,7 +656,9 @@ require("lazy").setup({
           offsets = {
             {
               filetype = "NvimTree",
-              text = "  Explorer",
+              text = function()
+                return "  " .. vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
+              end,
               highlight = "Directory",
               separator = true,
             },
