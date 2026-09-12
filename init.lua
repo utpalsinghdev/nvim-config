@@ -105,7 +105,7 @@ local function project_root()
   local buf = vim.api.nvim_get_current_buf()
   local name = vim.api.nvim_buf_get_name(buf)
   local ft = vim.bo[buf].filetype
-  if ft ~= "NvimTree" and ft ~= "dashboard" and vim.bo[buf].buftype == "" and name ~= "" then
+  if ft ~= "NvimTree" and ft ~= "SourceControl" and ft ~= "dashboard" and vim.bo[buf].buftype == "" and name ~= "" then
     start = vim.fn.fnamemodify(name, ":h")
   end
   local git = vim.fn.finddir(".git", start .. ";")
@@ -326,7 +326,18 @@ require("lazy").setup({
         },
         filters = { dotfiles = false },
         git = { enable = true, ignore = false },
-        actions = { open_file = { quit_on_open = false } },
+        actions = {
+          open_file = {
+            quit_on_open = false,
+            window_picker = {
+              enable = false,
+              exclude = {
+                filetype = { "notify", "qf", "SourceControl" },
+                buftype = { "nofile", "terminal", "help" },
+              },
+            },
+          },
+        },
         on_attach = function(bufnr)
           local api = require("nvim-tree.api")
           api.config.mappings.default_on_attach(bufnr)
@@ -406,7 +417,7 @@ require("lazy").setup({
         sync_cursor = true,
         click = { enabled = true, auto_switch_focus = false },
         exclude_filetypes = {
-          "help", "NvimTree", "dashboard", "lazy", "mason",
+          "help", "NvimTree", "SourceControl", "dashboard", "lazy", "mason",
           "TelescopePrompt", "notify", "noice", "qf",
         },
         split = {
@@ -1126,9 +1137,21 @@ require("lazy").setup({
     end,
   },
 
+  -- ── Copilot Chat (used to generate Source Control commit messages) ───────
+  {
+    "CopilotC-Nvim/CopilotChat.nvim",
+    dependencies = {
+      "zbirenbaum/copilot.lua",
+      "nvim-lua/plenary.nvim",
+    },
+    opts = {},
+  },
+
 }, {
   ui = { border = "rounded" },
 })
+
+require("source_control").setup()
 
 -- ============================================================================
 -- Keymaps
