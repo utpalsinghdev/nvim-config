@@ -40,6 +40,11 @@ opt.splitbelow = true
 opt.splitright = true
 opt.mouse = "a"
 opt.mousescroll = "ver:8,hor:2"
+local has_graphical_clipboard = (vim.env.WAYLAND_DISPLAY or "") ~= "" or (vim.env.DISPLAY or "") ~= ""
+local is_linux = vim.fn.has("unix") == 1 and vim.fn.has("macunix") == 0
+if is_linux and ((vim.env.SSH_TTY or "") ~= "" or not has_graphical_clipboard) then
+  vim.g.clipboard = "osc52"
+end
 opt.clipboard = "unnamedplus"
 opt.undofile = true
 opt.swapfile = false
@@ -1129,6 +1134,8 @@ require("lazy").setup({
 }, {
   ui = { border = "rounded" },
 })
+
+require("shortcut_finder").setup()
 
 -- ============================================================================
 -- Keymaps

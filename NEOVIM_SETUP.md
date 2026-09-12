@@ -74,6 +74,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 
 | Shortcut | Action |
 |----------|--------|
+| `Space + fk` / `:ShortcutFinder` | Fuzzy-search shortcuts by action, key, or mode |
 | `Ctrl+P` | Find file by name |
 | `Space + e` | Toggle file tree |
 | `Ctrl+F` / `Space + /` | Search in current file |
@@ -201,6 +202,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 
 ## Tips
 
+- Press **`Space+fk`** and type an action such as `copy`, `paste`, `rename`, or `terminal` to find its shortcut
 - Press **`Space`** and wait 0.4s — a popup shows all available shortcuts (which-key)
 - Type **`nvim .`** in your project folder to open the file tree automatically
 - Type **`nvim filename.js`** to open a specific file directly
