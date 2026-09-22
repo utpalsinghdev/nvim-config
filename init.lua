@@ -29,7 +29,9 @@ opt.expandtab = true
 opt.tabstop = 2
 opt.shiftwidth = 2
 opt.smartindent = true
-opt.wrap = false
+opt.wrap = true
+opt.linebreak = true
+opt.breakindent = true
 opt.ignorecase = true
 opt.smartcase = true
 opt.hlsearch = true
@@ -596,7 +598,35 @@ require("lazy").setup({
               padding = { left = 1, right = 0 },
             },
           },
-          lualine_x = { "encoding", "fileformat", "filetype" },
+          lualine_x = {
+            {
+              function()
+                if vim.bo.buftype ~= "" then
+                  return ""
+                end
+                local buf = vim.api.nvim_get_current_buf()
+                local tick = vim.api.nvim_buf_get_changedtick(buf)
+                local cache = vim.b[buf]._token_est
+                if cache and cache.tick == tick then
+                  return cache.text
+                end
+                local wc = vim.fn.wordcount()
+                local chars = wc.visual_chars or wc.chars or 0
+                local tokens = math.floor((chars + 3) / 4)
+                local text
+                if tokens >= 10000 then
+                  text = string.format("%.1fk tok", tokens / 1000)
+                else
+                  text = tokens .. " tok"
+                end
+                vim.b[buf]._token_est = { tick = tick, text = text }
+                return text
+              end,
+            },
+            "encoding",
+            "fileformat",
+            "filetype",
+          },
           lualine_y = { "progress" },
           lualine_z = {
             "location",
