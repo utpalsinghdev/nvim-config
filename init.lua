@@ -38,6 +38,7 @@ opt.hlsearch = true
 opt.incsearch = true
 opt.scrolloff = 8
 opt.sidescrolloff = 8
+opt.wildignore:append({ "*/node_modules/*", "*/node_modules" })
 opt.splitbelow = true
 opt.splitright = true
 opt.mouse = "a"
@@ -307,11 +308,21 @@ require("lazy").setup({
         ensure_installed = {
           "lua", "javascript", "typescript", "tsx", "python",
           "go", "rust", "html", "css", "json", "yaml", "markdown",
-          "bash", "toml", "dockerfile",
+          "bash", "toml", "dockerfile", "prisma",
         },
         auto_install = true,
         highlight = { enable = true },
         indent = { enable = true },
+      })
+      -- New nvim-treesitter does not start highlighting itself. Prisma has no
+      -- regex syntax file, so without this the schema stays uncolored.
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "prisma",
+        callback = function(ev)
+          if not vim.b[ev.buf].ts_highlight then
+            pcall(vim.treesitter.start, ev.buf, "prisma")
+          end
+        end,
       })
     end,
   },
@@ -331,7 +342,7 @@ require("lazy").setup({
             show = { file = true, folder = true, folder_arrow = true, git = true },
           },
         },
-        filters = { dotfiles = false },
+        filters = { dotfiles = false, custom = { "node_modules" } },
         git = { enable = true, ignore = false },
         actions = { open_file = { quit_on_open = false } },
         on_attach = function(bufnr)
@@ -615,9 +626,9 @@ require("lazy").setup({
                 local tokens = math.floor((chars + 3) / 4)
                 local text
                 if tokens >= 10000 then
-                  text = string.format("%.1fk tok", tokens / 1000)
+                  text = string.format("%.1fk t", tokens / 1000)
                 else
-                  text = tokens .. " tok"
+                  text = tokens .. " t"
                 end
                 vim.b[buf]._token_est = { tick = tick, text = text }
                 return text
@@ -739,6 +750,7 @@ require("lazy").setup({
       })
       require("which-key").add({
         { "<leader>e", desc = "Toggle file tree" },
+        { "<leader>m", desc = "Toggle minimap" },
         { "<leader>f", group = "Find/Search" },
         { "<leader>fg", desc = "Live grep (all files)" },
         { "<leader>/",  desc = "Search in buffer" },
@@ -957,6 +969,15 @@ require("lazy").setup({
     "williamboman/mason.nvim",
     config = function()
       require("mason").setup({ ui = { border = "rounded" } })
+      local registry = require("mason-registry")
+      if not registry.is_installed("prettier") then
+        registry.refresh(function()
+          local ok, pkg = pcall(registry.get_package, "prettier")
+          if ok and not pkg:is_installed() then
+            pkg:install()
+          end
+        end)
+      end
     end,
   },
   {
@@ -966,7 +987,7 @@ require("lazy").setup({
       -- gopls needs a Go toolchain; skip it unless `go` is on PATH
       local ensure = {
         "lua_ls", "ts_ls", "eslint", "pyright",
-        "rust_analyzer", "html", "cssls", "jsonls",
+        "rust_analyzer", "html", "cssls", "jsonls", "tailwindcss",
       }
       if vim.fn.executable("go") == 1 then
         table.insert(ensure, "gopls")
@@ -1006,7 +1027,7 @@ require("lazy").setup({
 
       local servers = {
         "lua_ls", "ts_ls", "eslint", "pyright",
-        "rust_analyzer", "html", "cssls", "jsonls",
+        "rust_analyzer", "html", "cssls", "jsonls", "tailwindcss",
       }
       if vim.fn.executable("go") == 1 then
         table.insert(servers, "gopls")
@@ -1175,6 +1196,9 @@ local o = { noremap = true, silent = true }
 
 -- File Tree. Ctrl+B is Herdr's prefix — use Space+E.
 map("n", "<leader>e",":NvimTreeToggle<CR>", o)
+
+-- Right minimap (braille overview). Space+m hides and shows it.
+map("n", "<leader>m", "<cmd>Neominimap Toggle<CR>", vim.tbl_extend("force", o, { desc = "Toggle minimap" }))
 
 -- Fuzzy find files
 map("n", "<C-p>", find_project_files, o)

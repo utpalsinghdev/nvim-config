@@ -52,6 +52,7 @@ local essentials = {
   { mode = "Normal", keys = "Ctrl+Shift+f", action = "Search text across the project", keywords = "grep find project" },
   { mode = "Normal", keys = "Ctrl+f", action = "Fuzzy-search inside the current file", keywords = "find buffer" },
   { mode = "Normal", keys = "Space+e", action = "Toggle the file explorer", keywords = "tree sidebar files" },
+  { mode = "Normal", keys = "Space+m", action = "Toggle the right minimap", keywords = "minimap sidebar overview dots" },
   { mode = "Normal", keys = "Shift+l", action = "Open the next buffer tab", keywords = "tab buffer next" },
   { mode = "Normal", keys = "Shift+h", action = "Open the previous buffer tab", keywords = "tab buffer previous" },
   { mode = "Normal", keys = "Alt+j", action = "Move the current line down", keywords = "reorder line" },

@@ -77,6 +77,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 | `Space + fk` / `:ShortcutFinder` | Fuzzy-search shortcuts by action, key, or mode |
 | `Ctrl+P` | Find file by name |
 | `Space + e` | Toggle file tree |
+| `Space + m` | Toggle the right minimap |
 | `Ctrl+F` / `Space + /` | Search in current file |
 | `Ctrl+Shift+F` / `Space + fg` | Grep across all files |
 | `Ctrl+S` | Save file |
